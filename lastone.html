@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Flight Price Prediction</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="lastone[1]_files/libs/clipboard/clipboard.min.js"></script>
+<script src="lastone[1]_files/libs/quarto-html/quarto.js"></script>
+<script src="lastone[1]_files/libs/quarto-html/popper.min.js"></script>
+<script src="lastone[1]_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="lastone[1]_files/libs/quarto-html/anchor.min.js"></script>
+<link href="lastone[1]_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="lastone[1]_files/libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="lastone[1]_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="lastone[1]_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="lastone[1]_files/libs/bootstrap/bootstrap-1bc8a17f135ab3d594c857e9f48e611b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Flight Price Prediction</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>title: “Flight Price Prediction” format: html editor: visual</p>
+<hr>
+<section id="install-and-load-required-packages" class="level1">
+<h1>Install and Load Required Packages</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span>(<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">"pacman"</span>, <span class="at">quietly =</span> T)){</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>      <span class="fu">install.packages</span>(<span class="st">"pacman"</span>)}</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pacman)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">p_load</span>(tidyverse, skimr, GGally, caretEnsemble, caret, rpart, xgboost,stringr,glmnet,lubridate,doParallel,car,rpart.plot,randomForest)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="load-datasets" class="level2">
+<h2 class="anchored" data-anchor-id="load-datasets">Load Datasets</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>df_business <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"C:/Users/Public/Documents/business.csv"</span>, <span class="at">stringsAsFactors=</span><span class="cn">TRUE</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>df_economy <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"C:/Users/Public/Documents/economy.csv"</span>, <span class="at">stringsAsFactors=</span><span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="add-class-column" class="level3">
+<h3 class="anchored" data-anchor-id="add-class-column">Add Class Column</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>df_business<span class="sc">$</span>class <span class="ot">&lt;-</span> <span class="st">"Business"</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>df_economy<span class="sc">$</span>class <span class="ot">&lt;-</span> <span class="st">"Economy"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="combine-datasets" class="level3">
+<h3 class="anchored" data-anchor-id="combine-datasets">Combine Datasets</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(df_business,df_economy)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="preview-data" class="level3">
+<h3 class="anchored" data-anchor-id="preview-data">Preview Data</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">|&gt;</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        date   airline ch_code num_code dep_time  from time_taken
+1 11-02-2022 Air India      AI      868    18:00 Delhi    02h 00m
+2 11-02-2022 Air India      AI      624    19:00 Delhi    02h 15m
+3 11-02-2022 Air India      AI      531    20:00 Delhi    24h 45m
+4 11-02-2022 Air India      AI      839    21:25 Delhi    26h 30m
+5 11-02-2022 Air India      AI      544    17:15 Delhi    06h 40m
+6 11-02-2022   Vistara      UK      985    19:50 Delhi    02h 10m
+                                                        stop arr_time     to
+1                                                  non-stop     20:00 Mumbai
+2                                                  non-stop     21:15 Mumbai
+3 1-stop\n\t\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t    20:45 Mumbai
+4 1-stop\n\t\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t    23:55 Mumbai
+5 1-stop\n\t\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t\t    23:55 Mumbai
+6                                                  non-stop     22:00 Mumbai
+   price    class
+1 25,612 Business
+2 25,612 Business
+3 42,220 Business
+4 44,450 Business
+5 46,690 Business
+6 50,264 Business</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Summarize Data</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>df <span class="sc">|&gt;</span> <span class="fu">skim</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">df</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Number of rows</td>
+<td style="text-align: left;">300261</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Number of columns</td>
+<td style="text-align: left;">12</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">_______________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Column type frequency:</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">character</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">factor</td>
+<td style="text-align: left;">10</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">numeric</td>
+<td style="text-align: left;">1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">________________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Group variables</td>
+<td style="text-align: left;">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: character</strong></p>
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 19%">
+<col style="width: 13%">
+<col style="width: 19%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 8%">
+<col style="width: 12%">
+<col style="width: 15%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: right;">min</th>
+<th style="text-align: right;">max</th>
+<th style="text-align: right;">empty</th>
+<th style="text-align: right;">n_unique</th>
+<th style="text-align: right;">whitespace</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">class</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: factor</strong></p>
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 46%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: left;">ordered</th>
+<th style="text-align: right;">n_unique</th>
+<th style="text-align: left;">top_counts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">date</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">49</td>
+<td style="text-align: left;">07-: 6633, 28-: 6603, 21-: 6594, 14-: 6586</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">airline</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: left;">Vis: 127859, Air: 80894, Ind: 43120, GO : 23177</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ch_code</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: left;">UK: 127859, AI: 80894, 6E: 43120, G8: 23177</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">dep_time</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">251</td>
+<td style="text-align: left;">07:: 8760, 10:: 7693, 19:: 5738, 09:: 5468</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">from</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: left;">Del: 61345, Mum: 60903, Ban: 52106, Kol: 46347</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">time_taken</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">483</td>
+<td style="text-align: left;">02h: 4242, 02h: 4036, 02h: 2879, 02h: 2755</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">stop</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">40</td>
+<td style="text-align: left;">1-s: 243603, non: 36044, 2+-: 13288, 1-s: 1839</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">arr_time</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">266</td>
+<td style="text-align: left;">19:: 9194, 20:: 6363, 22:: 5282, 09:: 5185</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">to</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: left;">Mum: 59109, Del: 57361, Ban: 51112, Kol: 49535</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">price</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">12165</td>
+<td style="text-align: left;">54,: 1445, 2,3: 1442, 54,: 1390, 60,: 1383</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 17%">
+<col style="width: 12%">
+<col style="width: 17%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 4%">
+<col style="width: 4%">
+<col style="width: 4%">
+<col style="width: 4%">
+<col style="width: 6%">
+<col style="width: 7%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">p0</th>
+<th style="text-align: right;">p25</th>
+<th style="text-align: right;">p50</th>
+<th style="text-align: right;">p75</th>
+<th style="text-align: right;">p100</th>
+<th style="text-align: left;">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">num_code</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1417.77</td>
+<td style="text-align: right;">1974.51</td>
+<td style="text-align: right;">101</td>
+<td style="text-align: right;">637</td>
+<td style="text-align: right;">818</td>
+<td style="text-align: right;">927</td>
+<td style="text-align: right;">9991</td>
+<td style="text-align: left;">▇▁▁▁▁</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="section" class="level3">
+<h3 class="anchored" data-anchor-id="section"></h3>
+<p>Ensure correct data types</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>class <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df<span class="sc">$</span>class)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>price <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df<span class="sc">$</span>price)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>class <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df<span class="sc">$</span>class)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>price <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df<span class="sc">$</span>price)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>stop <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df<span class="sc">$</span>stop)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>airline <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df<span class="sc">$</span>airline)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>from <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df<span class="sc">$</span>from)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>to <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df<span class="sc">$</span>to)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>dep_time <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df<span class="sc">$</span>dep_time)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>arr_time <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(df<span class="sc">$</span>arr_time)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="feature-engineering" class="level3">
+<h3 class="anchored" data-anchor-id="feature-engineering">Feature Engineering</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Process Date and Weekday Features</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>date <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(df<span class="sc">$</span>date, <span class="at">format =</span> <span class="st">"%d-%m-%Y"</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>weekday <span class="ot">&lt;-</span> <span class="fu">wday</span>(df<span class="sc">$</span>date, <span class="at">week_start =</span> <span class="dv">1</span>) <span class="co"># Monday = 1, Sunday = 7</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>is_weekend <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(<span class="fu">ifelse</span>(df<span class="sc">$</span>weekday <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">6</span>, <span class="dv">7</span>), <span class="st">"Weekend"</span>, <span class="st">"Weekday"</span>))</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>weekday_sin <span class="ot">&lt;-</span> <span class="fu">sin</span>(<span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> df<span class="sc">$</span>weekday <span class="sc">/</span> <span class="dv">7</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>weekday_cos <span class="ot">&lt;-</span> <span class="fu">cos</span>(<span class="dv">2</span> <span class="sc">*</span> pi <span class="sc">*</span> df<span class="sc">$</span>weekday <span class="sc">/</span> <span class="dv">7</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>date, <span class="sc">-</span>weekday)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>time_of_day <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(<span class="fu">case_when</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  df<span class="sc">$</span>arr_time <span class="sc">&lt;</span> <span class="dv">6</span> <span class="sc">~</span> <span class="st">"Night"</span>,</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  df<span class="sc">$</span>arr_time <span class="sc">&lt;</span> <span class="dv">12</span> <span class="sc">~</span> <span class="st">"Morning"</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  df<span class="sc">$</span>arr_time <span class="sc">&lt;</span> <span class="dv">18</span> <span class="sc">~</span> <span class="st">"Afternoon"</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Evening"</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Flight Duration (e.g., "02h 15m") to numeric (hours)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>time_taken <span class="ot">&lt;-</span> <span class="fu">sapply</span>(df<span class="sc">$</span>time_taken, <span class="cf">function</span>(x) {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.na</span>(x)) <span class="fu">return</span>(<span class="cn">NA</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  hours <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">str_extract</span>(x, <span class="st">"</span><span class="sc">\\</span><span class="st">d+(?=h)"</span>))</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  minutes <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">str_extract</span>(x, <span class="st">"</span><span class="sc">\\</span><span class="st">d+(?=m)"</span>))</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.na</span>(minutes)) minutes <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  hours <span class="sc">+</span> minutes <span class="sc">/</span> <span class="dv">60</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean Stop Column and Drop Unneeded Columns</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a> df<span class="sc">$</span>stop <span class="ot">&lt;-</span> <span class="fu">str_squish</span>(df<span class="sc">$</span>stop)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a> df<span class="sc">$</span>stop <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">grepl</span>(<span class="st">"1-stop"</span>, df<span class="sc">$</span>stop), <span class="st">"1-stop"</span>, <span class="fu">as.character</span>(df<span class="sc">$</span>stop))</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>stop <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(df<span class="sc">$</span>stop)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>num_code <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>ch_code <span class="ot">&lt;-</span> <span class="cn">NULL</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">|&gt;</span> <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    airline dep_time  from time_taken     stop arr_time     to price    class
+1 Air India      122 Delhi   2.000000 non-stop      132 Mumbai   107 Business
+2 Air India      132 Delhi   2.250000 non-stop      147 Mumbai   107 Business
+3 Air India      141 Delhi  24.750000   1-stop      141 Mumbai   390 Business
+4 Air India      155 Delhi  26.500000   1-stop      176 Mumbai   451 Business
+5 Air India      114 Delhi   6.666667   1-stop      176 Mumbai   526 Business
+6   Vistara      139 Delhi   2.166667 non-stop      154 Mumbai   639 Business
+  is_weekend weekday_sin weekday_cos time_of_day
+1    Weekday  -0.9749279  -0.2225209     Evening
+2    Weekday  -0.9749279  -0.2225209     Evening
+3    Weekday  -0.9749279  -0.2225209     Evening
+4    Weekday  -0.9749279  -0.2225209     Evening
+5    Weekday  -0.9749279  -0.2225209     Evening
+6    Weekday  -0.9749279  -0.2225209     Evening</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>df <span class="sc">|&gt;</span> <span class="fu">skim</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">df</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Number of rows</td>
+<td style="text-align: left;">300261</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Number of columns</td>
+<td style="text-align: left;">13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">_______________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Column type frequency:</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">factor</td>
+<td style="text-align: left;">7</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">numeric</td>
+<td style="text-align: left;">6</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">________________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Group variables</td>
+<td style="text-align: left;">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: factor</strong></p>
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 46%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: left;">ordered</th>
+<th style="text-align: right;">n_unique</th>
+<th style="text-align: left;">top_counts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">airline</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: left;">Vis: 127859, Air: 80894, Ind: 43120, GO : 23177</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">from</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: left;">Del: 61345, Mum: 60903, Ban: 52106, Kol: 46347</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">stop</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">1-s: 250929, non: 36044, 2+-: 13288</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">to</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: left;">Mum: 59109, Del: 57361, Ban: 51112, Kol: 49535</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">class</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Eco: 206774, Bus: 93487</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">is_weekend</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Wee: 216053, Wee: 84208</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">time_of_day</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: left;">Eve: 281743, Aft: 12158, Nig: 4160, Mor: 2200</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table class="caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 10%">
+<col style="width: 14%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 6%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 9%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">p0</th>
+<th style="text-align: right;">p25</th>
+<th style="text-align: right;">p50</th>
+<th style="text-align: right;">p75</th>
+<th style="text-align: right;">p100</th>
+<th style="text-align: left;">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">dep_time</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">92.30</td>
+<td style="text-align: right;">59.39</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">41.00</td>
+<td style="text-align: right;">88.00</td>
+<td style="text-align: right;">139.00</td>
+<td style="text-align: right;">251.00</td>
+<td style="text-align: left;">▇▆▇▂▂</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">time_taken</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">12.22</td>
+<td style="text-align: right;">7.19</td>
+<td style="text-align: right;">0.83</td>
+<td style="text-align: right;">6.75</td>
+<td style="text-align: right;">11.25</td>
+<td style="text-align: right;">16.17</td>
+<td style="text-align: right;">49.83</td>
+<td style="text-align: left;">▇▆▂▁▁</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">arr_time</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">110.67</td>
+<td style="text-align: right;">62.19</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">56.00</td>
+<td style="text-align: right;">120.00</td>
+<td style="text-align: right;">154.00</td>
+<td style="text-align: right;">266.00</td>
+<td style="text-align: left;">▆▅▇▃▂</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">price</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">5652.89</td>
+<td style="text-align: right;">3828.63</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">1158.00</td>
+<td style="text-align: right;">7196.00</td>
+<td style="text-align: right;">8974.00</td>
+<td style="text-align: right;">12165.00</td>
+<td style="text-align: left;">▇▂▂▇▃</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">weekday_sin</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0.02</td>
+<td style="text-align: right;">0.70</td>
+<td style="text-align: right;">-0.97</td>
+<td style="text-align: right;">-0.78</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">0.78</td>
+<td style="text-align: right;">0.97</td>
+<td style="text-align: left;">▇▃▃▃▇</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">weekday_cos</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-0.01</td>
+<td style="text-align: right;">0.71</td>
+<td style="text-align: right;">-0.90</td>
+<td style="text-align: right;">-0.90</td>
+<td style="text-align: right;">-0.22</td>
+<td style="text-align: right;">0.62</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: left;">▆▅▁▁▇</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</section>
+<section id="split-data" class="level2">
+<h2 class="anchored" data-anchor-id="split-data">Split Data</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">15</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>train_index <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(df<span class="sc">$</span>price, <span class="at">p =</span> <span class="fl">0.9</span>, <span class="at">list=</span>F)</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>train_df <span class="ot">&lt;-</span> df[train_index, ]</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>temp_df <span class="ot">&lt;-</span> df[<span class="sc">-</span>train_index, ]</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>vald_index <span class="ot">&lt;-</span> <span class="fu">createDataPartition</span>(temp_df<span class="sc">$</span>price, <span class="at">p =</span> <span class="fl">0.5</span>, <span class="at">list=</span>F)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>vald_df <span class="ot">&lt;-</span> temp_df[vald_index, ]</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>test_df <span class="ot">&lt;-</span> temp_df[<span class="sc">-</span>vald_index, ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(temp_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="compute-correlation-with-numeric-features" class="level2">
+<h2 class="anchored" data-anchor-id="compute-correlation-with-numeric-features">Compute Correlation with Numeric Features</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Numeric features: Correlation with price</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>numeric_cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"dep_time"</span>, <span class="st">"arr_time"</span>, <span class="st">"time_taken"</span>, <span class="st">"weekday_sin"</span>, <span class="st">"weekday_cos"</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>cor_results <span class="ot">&lt;-</span> <span class="fu">sapply</span>(numeric_cols, <span class="cf">function</span>(col) {</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cor.test</span>(train_df[[col]], train_df<span class="sc">$</span>price, <span class="at">use =</span> <span class="st">"complete.obs"</span>)<span class="sc">$</span>estimate</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Correlation with Price:</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Correlation with Price:</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(cor_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   dep_time.cor    arr_time.cor  time_taken.cor weekday_sin.cor weekday_cos.cor 
+    0.074894938     0.108821180    -0.080278934    -0.004817557    -0.003991276 </code></pre>
+</div>
+</div>
+</section>
+<section id="anova-for-categorical-features-full-output" class="level2">
+<h2 class="anchored" data-anchor-id="anova-for-categorical-features-full-output">ANOVA for Categorical Features (Full Output)</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Categorical features: ANOVA for price</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>categorical_cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"airline"</span>, <span class="st">"from"</span>, <span class="st">"to"</span>, <span class="st">"stop"</span>, <span class="st">"class"</span>,<span class="st">"is_weekend"</span>,<span class="st">"time_of_day"</span>)</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>anova_results <span class="ot">&lt;-</span> <span class="fu">lapply</span>(categorical_cols, <span class="cf">function</span>(col) {</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  aov_result <span class="ot">&lt;-</span> <span class="fu">aov</span>(price <span class="sc">~</span> train_df[[col]], <span class="at">data =</span> train_df)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summary</span>(aov_result)</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(anova_results) <span class="ot">&lt;-</span> categorical_cols</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">ANOVA p-values for Categorical Features:</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+ANOVA p-values for Categorical Features:</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(anova_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$airline
+                    Df    Sum Sq   Mean Sq F value Pr(&gt;F)    
+train_df[[col]]      7 5.370e+11 7.672e+10    6056 &lt;2e-16 ***
+Residuals       270229 3.423e+12 1.267e+07                   
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+$from
+                    Df    Sum Sq   Mean Sq F value Pr(&gt;F)    
+train_df[[col]]      5 1.268e+10 2.536e+09   173.6 &lt;2e-16 ***
+Residuals       270231 3.948e+12 1.461e+07                   
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+$to
+                    Df    Sum Sq   Mean Sq F value Pr(&gt;F)    
+train_df[[col]]      5 8.224e+09 1.645e+09   112.5 &lt;2e-16 ***
+Residuals       270231 3.952e+12 1.463e+07                   
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+$stop
+                    Df    Sum Sq   Mean Sq F value Pr(&gt;F)    
+train_df[[col]]      2 3.519e+10 1.760e+10    1211 &lt;2e-16 ***
+Residuals       270234 3.925e+12 1.453e+07                   
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+$class
+                    Df    Sum Sq   Mean Sq F value Pr(&gt;F)    
+train_df[[col]]      1 2.866e+12 2.866e+12  707639 &lt;2e-16 ***
+Residuals       270235 1.094e+12 4.050e+06                   
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+$is_weekend
+                    Df    Sum Sq  Mean Sq F value Pr(&gt;F)
+train_df[[col]]      1 2.734e+07 27341126   1.866  0.172
+Residuals       270235 3.960e+12 14655751               
+
+$time_of_day
+                    Df    Sum Sq   Mean Sq F value Pr(&gt;F)    
+train_df[[col]]      3 2.484e+09 827905033   56.52 &lt;2e-16 ***
+Residuals       270233 3.958e+12  14646770                   
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+</div>
+</div>
+</section>
+<section id="anova-for-categorical-features-p-values-only" class="level2">
+<h2 class="anchored" data-anchor-id="anova-for-categorical-features-p-values-only">ANOVA for Categorical Features (P-Values Only)</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Categorical features: ANOVA for price</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>categorical_cols <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"airline"</span>, <span class="st">"from"</span>, <span class="st">"to"</span>, <span class="st">"stop"</span>, <span class="st">"class"</span>,<span class="st">"is_weekend"</span>,<span class="st">"time_of_day"</span>)</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>anova_results <span class="ot">&lt;-</span> <span class="fu">lapply</span>(categorical_cols, <span class="cf">function</span>(col) {</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  aov_result <span class="ot">&lt;-</span> <span class="fu">aov</span>(price <span class="sc">~</span> train_df[[col]], <span class="at">data =</span> train_df)</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summary</span>(aov_result)[[<span class="dv">1</span>]][[<span class="st">"Pr(&gt;F)"</span>]][<span class="dv">1</span>]</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(anova_results) <span class="ot">&lt;-</span> categorical_cols</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">ANOVA p-values for Categorical Features:</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+ANOVA p-values for Categorical Features:</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(anova_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$airline
+[1] 0
+
+$from
+[1] 4.638205e-185
+
+$to
+[1] 3.787445e-119
+
+$stop
+[1] 0
+
+$class
+[1] 0
+
+$is_weekend
+[1] 0.171986
+
+$time_of_day
+[1] 1.614324e-36</code></pre>
+</div>
+</div>
+</section>
+<section id="select-significant-features" class="level2">
+<h2 class="anchored" data-anchor-id="select-significant-features">Select Significant Features</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Select features with significant correlations (e.g., |cor| &gt; 0.1) or ANOVA p-value &lt; 0.05</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>selected_filter <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>  numeric_cols[<span class="fu">abs</span>(cor_results) <span class="sc">&gt;</span> <span class="fl">0.15</span>],</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>  categorical_cols[<span class="fu">unlist</span>(anova_results) <span class="sc">&lt;</span> <span class="fl">0.05</span>]</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Selected Features from Filter Method:</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Selected Features from Filter Method:</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(selected_filter)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "airline"     "from"        "to"          "stop"        "class"      
+[6] "time_of_day"</code></pre>
+</div>
+</div>
+</section>
+<section id="check-multicollinearity" class="level2">
+<h2 class="anchored" data-anchor-id="check-multicollinearity">check multicollinearity</h2>
+<p>Using Variance Inflation Factor (VIF) to check for multicollinearity among predictors</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>temp_model <span class="ot">&lt;-</span> <span class="fu">lm</span>(price <span class="sc">~</span> arr_time <span class="sc">+</span> airline <span class="sc">+</span> from <span class="sc">+</span> to <span class="sc">+</span> stop <span class="sc">+</span> class <span class="sc">+</span> time_of_day <span class="sc">+</span>is_weekend <span class="sc">+</span>weekday_sin <span class="sc">+</span>weekday_cos, <span class="at">data =</span> train_df)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate VIF</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>vif_results <span class="ot">&lt;-</span> <span class="fu">vif</span>(temp_model)</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(vif_results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                GVIF Df GVIF^(1/(2*Df))
+arr_time    1.339195  1        1.157236
+airline     1.549580  7        1.031779
+from        1.313545  5        1.027648
+to          1.362184  5        1.031392
+stop        1.128687  2        1.030726
+class       1.277342  1        1.130195
+time_of_day 1.273056  3        1.041057
+is_weekend  2.869472  1        1.693952
+weekday_sin 1.377017  1        1.173463
+weekday_cos 2.493593  1        1.579111</code></pre>
+</div>
+</div>
+<section id="section-1" class="level3">
+<h3 class="anchored" data-anchor-id="section-1"></h3>
+</section>
+</section>
+<section id="perform-stepwise-regression" class="level2">
+<h2 class="anchored" data-anchor-id="perform-stepwise-regression">Perform Stepwise Regression</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>full_model <span class="ot">&lt;-</span> <span class="fu">lm</span>(price <span class="sc">~</span> ., <span class="at">data =</span> train_df)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>step_wise <span class="ot">&lt;-</span> <span class="fu">step</span>(full_model, <span class="at">direction =</span> <span class="st">'both'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Start:  AIC=4098622
+price ~ airline + dep_time + from + time_taken + stop + arr_time + 
+    to + class + is_weekend + weekday_sin + weekday_cos + time_of_day
+
+              Df  Sum of Sq        RSS     AIC
+- dep_time     1 3.7762e+06 1.0435e+12 4098621
+- weekday_sin  1 6.2916e+06 1.0435e+12 4098622
+- is_weekend   1 7.3312e+06 1.0435e+12 4098622
+&lt;none&gt;                      1.0435e+12 4098622
+- weekday_cos  1 8.0715e+06 1.0435e+12 4098622
+- arr_time     1 4.0146e+07 1.0435e+12 4098630
+- time_taken   1 5.2940e+07 1.0436e+12 4098634
+- time_of_day  3 2.6781e+08 1.0438e+12 4098685
+- to           5 5.1436e+09 1.0486e+12 4099941
+- from         5 7.2990e+09 1.0508e+12 4100496
+- stop         2 1.0613e+10 1.0541e+12 4101353
+- airline      7 2.2779e+10 1.0663e+12 4104444
+- class        1 2.3047e+12 3.3482e+12 4413677
+
+Step:  AIC=4098621
+price ~ airline + from + time_taken + stop + arr_time + to + 
+    class + is_weekend + weekday_sin + weekday_cos + time_of_day
+
+              Df  Sum of Sq        RSS     AIC
+- weekday_sin  1 6.2772e+06 1.0435e+12 4098621
+- is_weekend   1 7.3412e+06 1.0435e+12 4098621
+&lt;none&gt;                      1.0435e+12 4098621
+- weekday_cos  1 8.0973e+06 1.0435e+12 4098621
++ dep_time     1 3.7762e+06 1.0435e+12 4098622
+- arr_time     1 3.9225e+07 1.0435e+12 4098629
+- time_taken   1 5.9111e+07 1.0436e+12 4098634
+- time_of_day  3 2.6752e+08 1.0438e+12 4098684
+- to           5 5.1447e+09 1.0486e+12 4099940
+- from         5 7.2962e+09 1.0508e+12 4100494
+- stop         2 1.0787e+10 1.0543e+12 4101396
+- airline      7 2.3153e+10 1.0667e+12 4104537
+- class        1 2.3048e+12 3.3483e+12 4413679
+
+Step:  AIC=4098621
+price ~ airline + from + time_taken + stop + arr_time + to + 
+    class + is_weekend + weekday_cos + time_of_day
+
+              Df  Sum of Sq        RSS     AIC
+&lt;none&gt;                      1.0435e+12 4098621
++ weekday_sin  1 6.2772e+06 1.0435e+12 4098621
++ dep_time     1 3.7618e+06 1.0435e+12 4098622
+- weekday_cos  1 1.7838e+07 1.0435e+12 4098623
+- is_weekend   1 2.2242e+07 1.0435e+12 4098624
+- arr_time     1 3.9198e+07 1.0435e+12 4098629
+- time_taken   1 5.9029e+07 1.0436e+12 4098634
+- time_of_day  3 2.6788e+08 1.0438e+12 4098684
+- to           5 5.1439e+09 1.0487e+12 4099939
+- from         5 7.2985e+09 1.0508e+12 4100494
+- stop         2 1.0786e+10 1.0543e+12 4101396
+- airline      7 2.3153e+10 1.0667e+12 4104537
+- class        1 2.3049e+12 3.3484e+12 4413684</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(step_wise)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = price ~ airline + from + time_taken + stop + arr_time + 
+    to + class + is_weekend + weekday_cos + time_of_day, data = train_df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-8349.6  -438.3   113.2   983.6  5740.1 
+
+Coefficients:
+                     Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)         767.35033   27.66216  27.740  &lt; 2e-16 ***
+airlineVistara      129.47009    9.51150  13.612  &lt; 2e-16 ***
+airlineAirAsia     -894.26979   19.11014 -46.796  &lt; 2e-16 ***
+airlineGO FIRST     483.24289   16.79090  28.780  &lt; 2e-16 ***
+airlineIndigo      -255.27271   14.55908 -17.534  &lt; 2e-16 ***
+airlineSpiceJet     670.07451   23.64332  28.341  &lt; 2e-16 ***
+airlineStarAir      814.93962  267.96688   3.041 0.002357 ** 
+airlineTrujet      -500.85387  319.16943  -1.569 0.116593    
+fromChennai        -181.52842   14.10829 -12.867  &lt; 2e-16 ***
+fromDelhi            44.85064   12.84519   3.492 0.000480 ***
+fromHyderabad      -191.93927   13.97208 -13.737  &lt; 2e-16 ***
+fromKolkata         347.92257   13.58149  25.617  &lt; 2e-16 ***
+fromMumbai           40.24902   12.78113   3.149 0.001638 ** 
+time_taken           -2.72810    0.69779  -3.910 9.25e-05 ***
+stop2+-stop          49.97652   18.94729   2.638 0.008348 ** 
+stopnon-stop       -727.95444   13.81225 -52.704  &lt; 2e-16 ***
+arr_time             -0.22527    0.07071  -3.186 0.001443 ** 
+toChennai          -200.98564   14.05804 -14.297  &lt; 2e-16 ***
+toDelhi             -38.35951   13.15166  -2.917 0.003538 ** 
+toHyderabad        -193.56426   13.93050 -13.895  &lt; 2e-16 ***
+toKolkata           235.66366   13.43414  17.542  &lt; 2e-16 ***
+toMumbai             15.34983   12.97141   1.183 0.236668    
+classEconomy       7133.49517    9.23376 772.545  &lt; 2e-16 ***
+is_weekendWeekend    29.16151   12.15120   2.400 0.016401 *  
+weekday_cos         -16.52676    7.68978  -2.149 0.031621 *  
+time_of_dayEvening   79.84388   20.59697   3.876 0.000106 ***
+time_of_dayMorning  -28.10009   48.32756  -0.581 0.560937    
+time_of_dayNight    300.43655   37.81282   7.945 1.94e-15 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1965 on 270209 degrees of freedom
+Multiple R-squared:  0.7365,    Adjusted R-squared:  0.7365 
+F-statistic: 2.798e+04 on 27 and 270209 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<section id="section-2" class="level3">
+<h3 class="anchored" data-anchor-id="section-2"></h3>
+</section>
+</section>
+<section id="lasso-model" class="level2">
+<h2 class="anchored" data-anchor-id="lasso-model">LASSO Model</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>lass_model <span class="ot">&lt;-</span> <span class="fu">train</span>(</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a> price <span class="sc">~</span>.,</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> train_df,</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">'glmnet'</span>,</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">trControl =</span> <span class="fu">trainControl</span>(<span class="at">method=</span><span class="st">'cv'</span>, <span class="at">number=</span><span class="dv">5</span>),</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">tuneGrid =</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">alpha =</span> <span class="dv">1</span>,</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">lambda =</span> <span class="fu">seq</span>(<span class="fl">0.001</span>, <span class="fl">0.1</span>, <span class="at">length=</span><span class="dv">20</span>)</span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Extract Best Lambda</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>lambda <span class="ot">=</span> lass_model<span class="sc">$</span>bestTune<span class="sc">$</span>lambda</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract LASSO Coefficients</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>coefs <span class="ot">&lt;-</span> <span class="fu">coef</span>(lass_model<span class="sc">$</span>finalModel, <span class="at">s=</span>lambda)</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>coef_df <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">as.matrix</span>(coefs)) </span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>coef_df <span class="ot">&lt;-</span> coef_df <span class="sc">|&gt;</span> <span class="fu">rownames_to_column</span>(<span class="at">var =</span> <span class="st">'Feature'</span>)</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>coef_df <span class="ot">&lt;-</span> coef_df <span class="sc">|&gt;</span> <span class="fu">rename</span>(<span class="at">Coefficients =</span> s1)</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>selected_features <span class="ot">&lt;-</span> <span class="fu">subset</span>(coef_df, Coefficients <span class="sc">!=</span><span class="dv">0</span> <span class="sc">&amp;</span> Feature <span class="sc">!=</span> <span class="st">'(Intercept)'</span>)</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>selected_features</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              Feature Coefficients
+2      airlineVistara  121.3652760
+3      airlineAirAsia -871.7667177
+4     airlineGO FIRST  477.6883838
+5       airlineIndigo -239.2648884
+6     airlineSpiceJet  649.7042668
+7      airlineStarAir  533.0933600
+8       airlineTrujet -174.3808300
+9            dep_time   -0.0308732
+10        fromChennai -182.6682779
+11          fromDelhi   25.9038167
+12      fromHyderabad -192.1660313
+13        fromKolkata  325.8172570
+14         fromMumbai   20.4930523
+15         time_taken   -1.0873479
+16        stop2+-stop   31.1247211
+17       stopnon-stop -699.9480957
+18           arr_time   -0.1048322
+19          toChennai -187.4669448
+20            toDelhi  -29.6785069
+21        toHyderabad -182.4776744
+22          toKolkata  227.7818601
+23           toMumbai    9.1900820
+24       classEconomy 7121.3559861
+26        weekday_sin   -7.4689457
+28 time_of_dayEvening   43.8652657
+29 time_of_dayMorning   -8.2973780
+30   time_of_dayNight  249.6326749</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>features <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"arr_time"</span>, <span class="st">"airline"</span>,<span class="st">"dep_time"</span>, <span class="st">"from"</span>, <span class="st">"to"</span>, <span class="st">"stop"</span>, <span class="st">"class"</span>, <span class="st">"time_of_day"</span>,<span class="st">"weekday_sin"</span>, <span class="st">"time_taken"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>train_df <span class="ot">&lt;-</span> train_df[, <span class="fu">c</span>(<span class="st">"price"</span>, features)]</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>vald_df <span class="ot">&lt;-</span> vald_df[, <span class="fu">c</span>(<span class="st">"price"</span>, features)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="section-3" class="level3">
+<h3 class="anchored" data-anchor-id="section-3"></h3>
+</section>
+</section>
+<section id="linear-regression-model" class="level2">
+<h2 class="anchored" data-anchor-id="linear-regression-model">Linear Regression Model</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">15</span>)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>lm_model <span class="ot">&lt;-</span> <span class="fu">train</span>(</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  price <span class="sc">~</span>.,</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> train_df,</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">'lm'</span></span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>lm_model <span class="sc">|&gt;</span> <span class="fu">summary</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = .outcome ~ ., data = dat)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-8350.8  -437.9   113.6   983.0  5738.9 
+
+Coefficients:
+                     Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)         779.59139   27.78572  28.057  &lt; 2e-16 ***
+arr_time             -0.22783    0.07077  -3.219 0.001284 ** 
+airlineVistara      129.85412    9.51678  13.645  &lt; 2e-16 ***
+airlineAirAsia     -890.32400   19.49255 -45.675  &lt; 2e-16 ***
+`airlineGO FIRST`   485.13727   16.89487  28.715  &lt; 2e-16 ***
+airlineIndigo      -252.44327   14.83219 -17.020  &lt; 2e-16 ***
+airlineSpiceJet     672.83760   23.78337  28.290  &lt; 2e-16 ***
+airlineStarAir      821.71713  267.98364   3.066 0.002168 ** 
+airlineTrujet      -503.96459  319.17440  -1.579 0.114346    
+dep_time             -0.06638    0.06694  -0.992 0.321363    
+fromChennai        -181.65477   14.11400 -12.871  &lt; 2e-16 ***
+fromDelhi            44.89425   12.84569   3.495 0.000474 ***
+fromHyderabad      -191.28417   13.98359 -13.679  &lt; 2e-16 ***
+fromKolkata         348.48153   13.59160  25.639  &lt; 2e-16 ***
+fromMumbai           40.44995   12.78309   3.164 0.001555 ** 
+toChennai          -200.84966   14.05804 -14.287  &lt; 2e-16 ***
+toDelhi             -38.43598   13.15172  -2.923 0.003473 ** 
+toHyderabad        -193.54612   13.93057 -13.894  &lt; 2e-16 ***
+toKolkata           235.70319   13.43414  17.545  &lt; 2e-16 ***
+toMumbai             15.30325   12.97145   1.180 0.238095    
+`stop2+-stop`        48.78588   18.98770   2.569 0.010190 *  
+`stopnon-stop`     -726.59676   13.88925 -52.314  &lt; 2e-16 ***
+classEconomy       7133.44152    9.23378 772.537  &lt; 2e-16 ***
+time_of_dayEvening   79.88766   20.59466   3.879 0.000105 ***
+time_of_dayMorning  -25.75457   48.33036  -0.533 0.594113    
+time_of_dayNight    301.19555   37.81352   7.965 1.65e-15 ***
+weekday_sin         -12.58315    5.36902  -2.344 0.019096 *  
+time_taken           -2.61895    0.70690  -3.705 0.000212 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1965 on 270209 degrees of freedom
+Multiple R-squared:  0.7365,    Adjusted R-squared:  0.7365 
+F-statistic: 2.798e+04 on 27 and 270209 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(lm_model, <span class="at">newdata =</span> vald_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">format</span>(<span class="fu">postResample</span>(<span class="at">pred =</span> pred, <span class="at">obs =</span> vald_df<span class="sc">$</span>price), <span class="at">scientific =</span> F)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          RMSE       Rsquared            MAE 
+"1971.9310055" "   0.7341188" "1321.0302942" </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>baseline <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">mean</span>(train_df<span class="sc">$</span>price), <span class="fu">nrow</span>(vald_df))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">postResample</span>(<span class="at">pred =</span> baseline, <span class="at">obs =</span> vald_df<span class="sc">$</span>price) <span class="sc">|&gt;</span> <span class="fu">format</span>(<span class="at">scientific =</span> F)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      RMSE   Rsquared        MAE 
+"3824.221" "      NA" "3511.064" </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(lm_model, <span class="st">'Linear_reg_mode.rds'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="section-4" class="level2">
+<h2 class="anchored" data-anchor-id="section-4"></h2>
+</section>
+<section id="randomforest" class="level2">
+<h2 class="anchored" data-anchor-id="randomforest">RandomForest</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co">#set.seed(15)</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a><span class="co">#rf_model &lt;- train(</span></span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a><span class="co">#  price ~ .,</span></span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a><span class="co">#  data = train_df,</span></span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a><span class="co">#  method = "rf",</span></span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a><span class="co">#  trControl = trainControl(method = "cv", number = 5),</span></span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a><span class="co">#  tuneGrid = expand.grid(mtry = c(2, 4, 6))</span></span>
+<span id="cb56-8"><a href="#cb56-8" aria-hidden="true" tabindex="-1"></a><span class="co">#)</span></span>
+<span id="cb56-9"><a href="#cb56-9" aria-hidden="true" tabindex="-1"></a>rf_model <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"C:/Users/Public/Documents/RandomForest_model.rds"</span>)</span>
+<span id="cb56-10"><a href="#cb56-10" aria-hidden="true" tabindex="-1"></a>pred_rf <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_model, <span class="at">newdata =</span> vald_df)</span>
+<span id="cb56-11"><a href="#cb56-11" aria-hidden="true" tabindex="-1"></a><span class="fu">postResample</span>(<span class="at">pred =</span> pred_rf, <span class="at">obs =</span> vald_df<span class="sc">$</span>price)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        RMSE     Rsquared          MAE 
+1775.1632664    0.7850505 1171.0574669 </code></pre>
+</div>
+</div>
+</section>
+<section id="regression-tree-model" class="level2">
+<h2 class="anchored" data-anchor-id="regression-tree-model">regression Tree Model</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Train regression tree using rpart with 5-fold cross-validation</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>regression_tree <span class="ot">&lt;-</span> <span class="fu">train</span>(</span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>  price <span class="sc">~</span> .,</span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> train_df,</span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"rpart"</span>,</span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">trControl =</span> <span class="fu">trainControl</span>(<span class="at">method =</span> <span class="st">"cv"</span>, <span class="at">number =</span> <span class="dv">5</span>),</span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">tuneGrid =</span> <span class="fu">expand.grid</span>(<span class="at">cp =</span> <span class="fu">seq</span>(<span class="fl">0.0001</span>, <span class="fl">0.01</span>, <span class="at">length =</span> <span class="dv">10</span>))</span>
+<span id="cb58-8"><a href="#cb58-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the best model's complexity parameter</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Best Complexity Parameter (cp): "</span>, regression_tree<span class="sc">$</span>bestTune<span class="sc">$</span>cp, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Best Complexity Parameter (cp):  1e-04 </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualize the regression tree</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rpart.plot</span>(regression_tree<span class="sc">$</span>finalModel, <span class="at">main =</span> <span class="st">"Regression Tree for Flight Price Prediction"</span>, </span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">extra =</span> <span class="dv">101</span>, <span class="co"># Display the number of observations in each node</span></span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>           <span class="at">fallen.leaves =</span> <span class="cn">TRUE</span>, <span class="co"># Display leaves at the bottom</span></span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>           <span class="at">type =</span> <span class="dv">4</span>, <span class="co"># Detailed split labels</span></span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>           <span class="at">digits =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: labs do not fit even at cex 0.15, there may be some overplotting</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="lastone%5B1%5D_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict on validation set</span></span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(regression_tree, <span class="at">newdata =</span> vald_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate performance</span></span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>metrics <span class="ot">&lt;-</span> <span class="fu">postResample</span>(<span class="at">pred =</span> pred, <span class="at">obs =</span> vald_df<span class="sc">$</span>price)</span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Validation Set Performance (Regression Tree):</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Validation Set Performance (Regression Tree):</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">format</span>(metrics, <span class="at">scientific =</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          RMSE       Rsquared            MAE 
+"1867.8916397" "   0.7614299" "1255.1914581" </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Baseline model (mean price)</span></span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>baseline_pred <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">mean</span>(train_df<span class="sc">$</span>price), <span class="fu">nrow</span>(vald_df))</span>
+<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a>baseline_metrics <span class="ot">&lt;-</span> <span class="fu">postResample</span>(<span class="at">pred =</span> baseline_pred, <span class="at">obs =</span> vald_df<span class="sc">$</span>price)</span>
+<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Baseline Validation Performance:</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Baseline Validation Performance:</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">format</span>(baseline_metrics, <span class="at">scientific =</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      RMSE   Rsquared        MAE 
+"3824.221" "      NA" "3511.064" </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(regression_tree, <span class="st">"RegressionTree_model.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="evaluate-models-on-validation-set" class="level2">
+<h2 class="anchored" data-anchor-id="evaluate-models-on-validation-set">Evaluate models on validation set</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>models <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Linear =</span> lm_model,</span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a><span class="co">#  LASSO = lass_model,</span></span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a> <span class="at">RandomForest =</span> rf_model,</span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a> <span class="at">Regression_tree =</span>regression_tree</span>
+<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-8"><a href="#cb73-8" aria-hidden="true" tabindex="-1"></a>vald_results <span class="ot">&lt;-</span> <span class="fu">lapply</span>(models, <span class="cf">function</span>(model) {</span>
+<span id="cb73-9"><a href="#cb73-9" aria-hidden="true" tabindex="-1"></a>  pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(model, <span class="at">newdata =</span> vald_df)</span>
+<span id="cb73-10"><a href="#cb73-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">postResample</span>(<span class="at">pred =</span> pred, <span class="at">obs =</span> vald_df<span class="sc">$</span>price)</span>
+<span id="cb73-11"><a href="#cb73-11" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="format-results" class="level3">
+<h3 class="anchored" data-anchor-id="format-results">Format results</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Format results</span></span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>vald_results_df <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(<span class="fu">names</span>(vald_results), <span class="cf">function</span>(name) {</span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(</span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">Model =</span> name,</span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">RMSE =</span> <span class="fu">format</span>(vald_results[[name]][<span class="st">"RMSE"</span>], <span class="at">scientific =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb74-6"><a href="#cb74-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">Rsquared =</span> <span class="fu">format</span>(vald_results[[name]][<span class="st">"Rsquared"</span>], <span class="at">scientific =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb74-7"><a href="#cb74-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">MAE =</span> <span class="fu">format</span>(vald_results[[name]][<span class="st">"MAE"</span>], <span class="at">scientific =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb74-8"><a href="#cb74-8" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb74-9"><a href="#cb74-9" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb74-10"><a href="#cb74-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Validation Set Performance:</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Validation Set Performance:</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(vald_results_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                Model     RMSE  Rsquared      MAE
+RMSE           Linear 1971.931 0.7341188  1321.03
+RMSE1    RandomForest 1775.163 0.7850505 1171.057
+RMSE2 Regression_tree 1867.892 0.7614299 1255.191</code></pre>
+</div>
+</div>
+</section>
+<section id="select-best-model-lowest-rmse" class="level3">
+<h3 class="anchored" data-anchor-id="select-best-model-lowest-rmse">Select best model (lowest RMSE)</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a>best_model_name <span class="ot">&lt;-</span> vald_results_df<span class="sc">$</span>Model[<span class="fu">which.min</span>(<span class="fu">as.numeric</span>(vald_results_df<span class="sc">$</span>RMSE))]</span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a>best_model <span class="ot">&lt;-</span> models[[best_model_name]]</span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Best Model:"</span>, best_model_name, <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Best Model: RandomForest </code></pre>
+</div>
+</div>
+</section>
+<section id="evaluate-best-model-on-test-set" class="level3">
+<h3 class="anchored" data-anchor-id="evaluate-best-model-on-test-set">Evaluate best model on test set</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a>test_pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(best_model, <span class="at">newdata =</span> test_df)</span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>test_metrics <span class="ot">&lt;-</span> <span class="fu">postResample</span>(<span class="at">pred =</span> test_pred, <span class="at">obs =</span> test_df<span class="sc">$</span>price)</span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Test Set Performance (Best Model -"</span>, best_model_name, <span class="st">"):</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Test Set Performance (Best Model - RandomForest ):</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">format</span>(test_metrics, <span class="at">scientific =</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          RMSE       Rsquared            MAE 
+"1784.9305398" "   0.7843726" "1171.6129022" </code></pre>
+</div>
+</div>
+</section>
+<section id="evaluate-best-model-on-test-set-1" class="level3">
+<h3 class="anchored" data-anchor-id="evaluate-best-model-on-test-set-1">Evaluate best model on test set</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a>baseline_pred <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="fu">mean</span>(train_df<span class="sc">$</span>price), <span class="fu">nrow</span>(vald_df))</span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a>baseline_metrics <span class="ot">&lt;-</span> <span class="fu">postResample</span>(<span class="at">pred =</span> baseline_pred, <span class="at">obs =</span> vald_df<span class="sc">$</span>price)</span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">Baseline Validation Performance:</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Baseline Validation Performance:</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">format</span>(baseline_metrics, <span class="at">scientific =</span> <span class="cn">FALSE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      RMSE   Rsquared        MAE 
+"3824.221" "      NA" "3511.064" </code></pre>
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="summary" class="level1">
+<h1>Summary</h1>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 46%">
+<col style="width: 32%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Stage</th>
+<th style="text-align: left;">Description</th>
+<th style="text-align: left;">Key Libraries/Functions/Methods Used</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>Setup</strong></td>
+<td style="text-align: left;">Installs (if needed) and loads required R packages for the analysis.</td>
+<td style="text-align: left;"><code>pacman::p_load</code>, <code>tidyverse</code>, <code>skimr</code>, <code>GGally</code>, <code>caretEnsemble</code>, <code>caret</code>, <code>rpart</code>, <code>xgboost</code>, etc.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Data Loading</strong></td>
+<td style="text-align: left;">Reads two CSV files containing flight data (business and economy class).</td>
+<td style="text-align: left;"><code>read.csv</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Data Preparation</strong></td>
+<td style="text-align: left;">Adds a ‘class’ column to distinguish datasets, combines them into one dataframe (<code>df</code>).</td>
+<td style="text-align: left;"><code>bind_rows</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Initial Exploration</strong></td>
+<td style="text-align: left;">Previews the first few rows and uses <code>skimr</code> for a detailed summary of the combined dataset (rows, columns, variable types, missing values).</td>
+<td style="text-align: left;"><code>head()</code>, <code>skimr::skim()</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Data Cleaning</strong></td>
+<td style="text-align: left;">Converts columns to appropriate data types (factors, numeric). Specifically converts <code>price</code> to numeric and standardizes factor levels.</td>
+<td style="text-align: left;"><code>as.factor()</code>, <code>as.numeric()</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Feature Engineering</strong></td>
+<td style="text-align: left;">Extracts date features (weekday, weekend indicator, cyclical sin/cos), categorizes arrival time, converts <code>time_taken</code> to numeric hours.</td>
+<td style="text-align: left;"><code>as.Date</code>, <code>lubridate::wday</code>, <code>ifelse</code>, <code>sin</code>, <code>cos</code>, <code>case_when</code>, <code>sapply</code>, <code>stringr::str_extract</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Feature Engineering</strong></td>
+<td style="text-align: left;">Cleans the ‘stop’ column (standardizing ‘1-stop’) and removes unnecessary columns (<code>num_code</code>, <code>ch_code</code>).</td>
+<td style="text-align: left;"><code>stringr::str_squish</code>, <code>ifelse</code>, <code>NULL</code> assignment</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Data Splitting</strong></td>
+<td style="text-align: left;">Splits the cleaned dataset into training (90%), validation (5%), and test (5%) sets using stratified sampling based on price.</td>
+<td style="text-align: left;"><code>set.seed</code>, <code>caret::createDataPartition</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Feature Analysis</strong></td>
+<td style="text-align: left;">Calculates Pearson correlation between numeric features and price on the training set.</td>
+<td style="text-align: left;"><code>cor.test</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Feature Analysis</strong></td>
+<td style="text-align: left;">Performs ANOVA to test the significance of categorical features in relation to price on the training set.</td>
+<td style="text-align: left;"><code>aov</code>, <code>summary()</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Multicollinearity Check</strong></td>
+<td style="text-align: left;">Calculates Variance Inflation Factor (VIF) to check for multicollinearity among selected predictors using a linear model.</td>
+<td style="text-align: left;"><code>lm</code>, <code>car::vif</code></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>Model Selection</strong></td>
+<td style="text-align: left;">Performs stepwise linear regression (both directions, AIC-based) to select the most relevant predictors for the price prediction model.</td>
+<td style="text-align: left;"><code>lm</code>, <code>step</code></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>Model Summary</strong></td>
+<td style="text-align: left;">Displays the summary of the final linear model selected by the stepwise procedure, showing significant predictors and coefficients.</td>
+<td style="text-align: left;"><code>summary()</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
